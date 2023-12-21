@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Visualization Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.rawgit.com/jasondavies/d3-cloud/v1.2.5/build/d3.layout.cloud.js"></script>
+
+    <style>
+        #conversation-container {
+        position: absolute;
+        right: 0;
+        top: 180px;
+        border-radius: 20px;
+        width: 400px;
+        height: 250px;
+        background-color: black;
+        padding: 10px;
+        overflow-y: scroll;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        /* align-items: center; */
+        }
+
+        p{
+            color: white;
+            font-family: sans-serif;
+            font-size: 10px;
+        }
+
+    </style>
+
+</head>
+<body>
+  <header>
+    <h1>Data Visualization Dashboard</h1>
+  </header>
+
+    <main>
+
+        <nav>
+            <a href="dashboard.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="project-report.html" target="_blank">Project Report</a>
+        </nav>
+
+        <div id="conversation-container"></div>
+        <div id="wordcloud"></div>
+        <div id="pie-chart"></div>
+
+        <script>
+      
+        const displayConvoButton = document.createElement('button');
+        displayConvoButton.classList.add('displayConvoButton');
+        displayConvoButton.textContent = 'Conversation';
+      
+        const displayHeatMapButton = document.createElement('button');
+        displayHeatMapButton.classList.add('displayHeatMapButton');
+        displayHeatMapButton.textContent = 'Heat Map';
+
+        const displayWordCloudButton = document.createElement('button');
+        displayWordCloudButton.classList.add('displayWordCloudButton');
+        displayWordCloudButton.textContent = 'Word Cloud';
+
+        const displayPieChartButton = document.createElement('button');
+        displayPieChartButton.classList.add('displayPieChartButton');
+        displayPieChartButton.textContent = 'Pie Chart';
+
+        const displayBubbleChartButton = document.createElement('button');
+        displayBubbleChartButton.classList.add('displayBubbleChartButton');
+        displayBubbleChartButton.textContent = 'Bubble Chart';
+
+        document.body.appendChild(displayBubbleChartButton);
+        displayBubbleChartButton.addEventListener('click', () => {
+          displayBubbleChart();
+        });
+
+        document.body.appendChild(displayPieChartButton);
+        displayPieChartButton.addEventListener('click', () => {
+          // Load data from CSV file
+          d3.csv("analysis.csv").then(function(data) {
+            createPieChart(data);
+          });
+        });
+
+        document.body.appendChild(displayWordCloudButton);
+        displayWordCloudButton.addEventListener('click', () => {
+          // Load data from CSV file
+          d3.csv("sentence.csv").then(function(data) {
+            const sentences = data.map(d => d.sentence);
+            const wordCloudData = preprocessData(sentences);
+            createWordCloud(wordCloudData);
+          });
+        });
+
+
+        document.body.appendChild(displayConvoButton);
+        displayConvoButton.addEventListener('click', () => {
+            displayConversation();
+        });
+
+        document.body.appendChild(displayHeatMapButton);
+        displayHeatMapButton.addEventListener('click', () => {
+            displayHeatMap();
+            // displayGroupedBarChart();
+        });
+      
+          function displayConversation() {
+        // Define container element
+        const container = d3.select("#conversation-container");
+      
+        // Read data from CSV
+        d3.csv("sentence.csv").then(data => {
+          // Initialize conversation index
+          let index = 0;
+      
+          // Update conversation at regular intervals
+          setInterval(() => {
+            // Get the next sentence
+            const sentence = data[index];
+      
+            // Determine alignment
+            const alignment = index % 2 === 0 ? "right" : "left";
+      
+            // Display the sentence
+            container.append("p")
+              .text(sentence.sentence)
+              .style("text-align", alignment);
+      
+            // Increment index
+            index++;
+      
+            // Check if reached the end of data
+            if (index >= data.length) {
+              clearInterval();
+            }
+          }, 2000); // Update every 2 second
+        });
+      }
+
+      function displayHeatMap() {
+  const width = 500;
+  const height = 30;
+  const margin = { top: 50, right: 20, bottom: 50, left: 40 }; // Increased bottom margin for the sentiment value box
+  const blockInterval = 2000; // Interval between each new sentiment in milliseconds
+
+  // Define color scale for sentiment
+  const colorScale = d3.scaleLinear()
+    .domain([0, 10])
+    .range(["red", "green"]);
+
+  // Load data
+  d3.csv("analysis.csv").then(function(data) {
+
+    // Extract sentiment values and labels
+    const sentimentValues = data.map(d => parseFloat(d.sentiment));
+    const labels = data.map(d => d.sentence);
+
+    // Create SVG container
+    const svg = d3.select("body").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom + 50)
+      .append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    // Add gradient legend
+    const legendWidth = 200;
+    const legendHeight = 20;
+
+    const legendScale = d3.scaleLinear()
+      .domain([0, 10])
+      .range([0, legendWidth]);
+
+    const legendAxis = d3.axisBottom(legendScale)
+      .ticks(5);
+
+    const legend = svg.append("g")
+      .attr("class", "legend")
+      .attr("transform", `translate(${(width - legendWidth) / 2}, ${-margin.top})`);
+
+    legend.append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .style("fill", "url(#gradient)");
+
+    const gradient = legend.append("defs")
+      .append("linearGradient")
+      .attr("id", "gradient")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "0%");
+
+    gradient.selectAll("stop")
+      .data(colorScale.range())
+      .enter().append("stop")
+      .attr("offset", (d, i) => i / (colorScale.range().length - 1))
+      .attr("stop-color", d => d);
+
+    legend.append("g")
+      .attr("transform", `translate(0, ${legendHeight})`)
+      .call(legendAxis)
+      .select(".domain")
+      .remove();
+
+    // Sentiment value box above the heatmap
+    const sentimentBox = svg.append("rect")
+      .attr("class", "sentiment-box")
+      .attr("x", 0)
+      .attr("y", -margin.top)
+      .attr("width", width)
+      .attr("height", margin.top)
+      .style("fill", "lightgray")
+      .style("opacity", 0.8);
+
+    const sentimentText = svg.append("text")
+      .attr("class", "sentiment-text")
+      .attr("x", width / 2)
+      .attr("y", -margin.top / 2)
+      .attr("text-anchor", "middle")
+      .style("font-size", "16px")
+      .style("visibility", "hidden");
+
+    let currentIndex = 0;
+
+    const intervalId = setInterval(function() {
+      // Check if all sentiments are displayed
+      if (currentIndex >= sentimentValues.length) {
+        clearInterval(intervalId);
+        return;
+      }
+
+      // Display the current sentiment
+      const currentSentiment = sentimentValues[currentIndex];
+      const currentLabel = labels[currentIndex];
+
+      const block = svg.append("g")
+        .attr("class", "block")
+        .on("mouseover", function() {
+          sentimentText.text(`Sentiment: ${currentSentiment.toFixed(2)}`);
+          sentimentText.style("visibility", "visible");
+        })
+        .on("mouseout", function() {
+          sentimentText.style("visibility", "hidden");
+        });
+
+      block.append("rect")
+        .attr("x", currentIndex * (width / sentimentValues.length))
+        .attr("y", 0)
+        .attr("width", width / sentimentValues.length)
+        .attr("height", height)
+        .attr("fill", colorScale(currentSentiment));
+
+      block.append("text")
+        .attr("class", "label")
+        .attr("x", currentIndex * (width / sentimentValues.length) + (width / sentimentValues.length / 2))
+        .attr("y", height + margin.bottom +15)
+        .text(currentLabel);
+
+      block.append("text")
+        .attr("class", "sentiment-number")
+        .attr("x", currentIndex * (width / sentimentValues.length) + (width / sentimentValues.length / 2))
+        .attr("y", height/2 )
+        .attr("text-anchor", "middle")
+        .attr("dy", "0.35em")
+        .style("visibility", "hidden")
+        .text(currentSentiment.toFixed(2));
+
+      currentIndex++;
+    }, blockInterval);
+
+    // Add axis labels
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height + margin.bottom - 5)
+      .text("Sentiment Value");
+  });
+}
+
+function displayGroupedBarChart() {
+  const width = 800;
+  const height = 400;
+  const margin = { top: 50, right: 20, bottom: 50, left: 40 };
+
+  // Load data
+  d3.csv("analysis.csv").then(function(data) {
+    // Group data by topic
+    const groupedData = d3.group(data, d => d.topic);
+
+    // Extract unique topics
+    const topics = Array.from(groupedData.keys());
+
+    // Set up scales
+    const x0Scale = d3.scaleBand()
+      .domain(topics)
+      .range([margin.left, width - margin.right])
+      .padding(0.2);
+
+    const x1Scale = d3.scaleBand()
+      .domain(['sentiment', 'interest_level'])
+      .range([0, x0Scale.bandwidth()])
+      .padding(0.1);
+
+    const yScale = d3.scaleLinear()
+      .domain([0, d3.max(data, d => Math.max(parseFloat(d.sentiment), parseFloat(d.interest_level)))])
+      .range([height - margin.bottom, margin.top]);
+
+    // Define color scale for sentiment
+    const colorScale = d3.scaleLinear()
+      .domain([0, 10])
+      .range(["red", "green"]);
+
+    // Create SVG container
+    const svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    // Create grouped bars
+    const bars = svg.selectAll("g")
+      .data(topics)
+      .enter().append("g")
+      .attr("transform", d => `translate(${x0Scale(d)},0)`)
+      .selectAll("rect")
+      .data(d => groupedData.get(d))
+      .enter().append("rect")
+      .attr("x", d => x1Scale(d.category))
+      .attr("y", d => yScale(Math.max(parseFloat(d.sentiment), parseFloat(d.interest_level))))
+      .attr("width", x1Scale.bandwidth())
+      .attr("height", d => height - margin.bottom - yScale(Math.abs(parseFloat(d.sentiment) - parseFloat(d.interest_level))))
+      .attr("fill", d => colorScale(parseFloat(d.sentiment)))
+      .on("mouseover", showTooltip)
+      .on("mousemove", updateTooltip)
+      .on("mouseleave", hideTooltip);
+
+    // Add axis labels
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height - 10)
+      .text("Topic");
+
+    svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", 10)
+      .text("Values");
+
+    // Add legend
+    const legend = svg.append("g")
+      .attr("transform", `translate(${width - margin.right}, ${margin.top})`)
+      .selectAll("g")
+      .data(['sentiment', 'interest_level'])
+      .enter().append("g")
+      .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("width", 18)
+      .attr("height", 18)
+      .attr("fill", d => colorScale(5)); // Use a midpoint value for the legend color
+
+    legend.append("text")
+      .attr("x", 25)
+      .attr("y", 9)
+      .attr("dy", "0.35em")
+      .text(d => d);
+
+    // Tooltip functions
+    const tooltip = d3.select("body").append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "1px")
+      .style("border-radius", "5px")
+      .style("padding", "10px");
+
+    function showTooltip(event, d) {
+      tooltip.transition()
+        .duration(200)
+        .style("opacity", 1);
+      tooltip.html(`<strong>${d.topic}</strong><br>Sentiment: ${d.sentiment}<br>Interest Level: ${d.interest_level}`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY + 10) + "px");
+    }
+
+    function updateTooltip(event, d) {
+      tooltip.style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY + 10) + "px");
+    }
+
+    function hideTooltip(event, d) {
+      tooltip.transition()
+        .duration(200)
+        .style("opacity", 0);
+    }
+  });
+}
+
+
+
+function createWordCloud(words) {
+      const width = 800;
+      const height = 400;
+
+      // Create SVG container
+      const svg = d3.select("#wordcloud").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${width / 2},${height / 2})`);
+
+      // Create word cloud layout
+      const layout = d3.layout.cloud()
+        .size([width, height])
+        .words(words)
+        .padding(5)
+        .rotate(() => (Math.random() < 0.5 ? 0 : 90)) // Randomly rotate words
+        .fontSize(d => d.size)
+        .on("end", draw);
+
+      // Generate word cloud
+      layout.start();
+
+      // Draw the word cloud
+      function draw(words) {
+        svg.selectAll("text")
+          .data(words)
+          .enter().append("text")
+          .style("font-size", d => `${d.size}px`)
+          .style("fill", "#000")
+          .attr("text-anchor", "middle")
+          .attr("transform", d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
+          .text(d => d.text);
+      }
+    }
+
+    // Preprocess the data to get word frequency
+    function preprocessData(sentences) {
+      const wordCount = {};
+      const words = [];
+
+      sentences.forEach(sentence => {
+        const sentenceWords = sentence.split(/\s+/);
+        sentenceWords.forEach(word => {
+          const cleanedWord = word.toLowerCase().replace(/[.,]/g, ''); // Remove punctuation
+          if (cleanedWord.length > 0) {
+            wordCount[cleanedWord] = (wordCount[cleanedWord] || 0) + 1;
+          }
+        });
+      });
+
+      // Convert word count object to array of objects
+      for (const word in wordCount) {
+        if (wordCount.hasOwnProperty(word)) {
+          words.push({ text: word, size: wordCount[word] * 10 }); // Adjust size based on frequency
+        }
+      }
+
+      return words;
+    }
+
+    function createPieChart(data) {
+  // Extract topics and calculate frequency
+  const topicCount = {};
+  data.forEach(d => {
+    const topic = d.topic;
+    topicCount[topic] = (topicCount[topic] || 0) + 1;
+  });
+
+  // Convert data to an array of objects
+  const topicData = Object.entries(topicCount).map(([topic, count]) => ({ topic, count }));
+
+  // Set up the pie chart dimensions
+  const width = 400;
+  const height = 400;
+  const radius = Math.min(width, height) / 2;
+
+  // Create SVG container
+  const svg = d3.select("#pie-chart")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", `translate(${width / 2},${height / 2})`);
+
+  // Create a color scale
+  const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+  // Generate the pie chart layout
+  const pie = d3.pie().value(d => d.count);
+  const data_ready = pie(topicData);
+
+  // Build the pie chart
+  const slices = svg.selectAll("slices")
+    .data(data_ready)
+    .enter()
+    .append("path")
+    .attr("d", d3.arc().innerRadius(0).outerRadius(radius))
+    .attr("fill", d => color(d.data.topic))
+    .attr("stroke", "black")
+    .on("mouseover", showTooltip)
+    .on("mousemove", updateTooltip)
+    .on("mouseleave", hideTooltip);
+
+  // Tooltip functions
+  const tooltip = d3.select("body").append("div")
+    .style("opacity", 0)
+    .attr("class", "tooltip")
+    .style("position", "absolute")
+    .style("background-color", "white")
+    .style("border", "solid")
+    .style("border-width", "1px")
+    .style("border-radius", "5px")
+    .style("padding", "10px");
+
+  function showTooltip(event, d) {
+    // Increase the size of the slice
+    d3.select(this)
+      .transition()
+      .duration(200)
+      .attr("d", d3.arc().innerRadius(0).outerRadius(radius * 1.1));
+
+    tooltip.transition()
+      .duration(200)
+      .style("opacity", 1);
+    tooltip.html(`${d.data.topic}: ${((d.endAngle - d.startAngle) / (2 * Math.PI) * 100).toFixed(2)}%`)
+      .style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY + 10) + "px");
+  }
+
+  function updateTooltip(event, d) {
+    tooltip.style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY + 10) + "px");
+  }
+
+  function hideTooltip(event, d) {
+    // Reset the size of the slice
+    d3.select(this)
+      .transition()
+      .duration(200)
+      .attr("d", d3.arc().innerRadius(0).outerRadius(radius));
+
+    tooltip.transition()
+      .duration(200)
+      .style("opacity", 0);
+  }
+    }
+
+    function displayBubbleChart() {
+  const width = 800;
+  const height = 400;
+  const margin = { top: 50, right: 20, bottom: 50, left: 40 };
+
+  // Load data
+  d3.csv("analysis.csv").then(function(data) {
+    // Group data by topic and calculate frequency
+    const topicFrequency = d3.rollup(data, v => v.length, d => d.topic);
+
+    // Extract unique topics and their frequencies
+    const topics = Array.from(topicFrequency.keys());
+    const frequencies = Array.from(topicFrequency.values());
+
+    // Set up scales
+    const xScale = d3.scaleLinear()
+      .domain([0, 10]) // Assuming sentiment values range from 0 to 10
+      .range([margin.left, width - margin.right]);
+
+    const yScale = d3.scaleLinear()
+      .domain([0, 5]) // Assuming interest level values range from 0 to 5
+      .range([height - margin.bottom, margin.top]);
+
+    const radiusScale = d3.scaleSqrt()
+      .domain([0, d3.max(frequencies)])
+      .range([5, 25]); // Adjust the range based on the desired size of the bubbles
+
+    // Create SVG container
+    const svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    // Create bubbles
+    const bubbles = svg.selectAll("circle")
+      .data(topics)
+      .enter().append("circle")
+      .attr("cx", () => xScale(Math.random() * 10)) // Randomize x values for better visibility
+      .attr("cy", () => yScale(Math.random() * 5)) // Randomize y values for better visibility
+      .attr("r", d => radiusScale(topicFrequency.get(d)))
+      .attr("fill", "skyblue")
+      .attr("opacity", 0.7)
+      .on("mouseover", showTooltip)
+      .on("mousemove", updateTooltip)
+      .on("mouseleave", hideTooltip);
+
+    // Add axis labels
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height - 10)
+      .text("Sentiment");
+
+    svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", 10)
+      .text("Interest Level");
+
+    // Tooltip functions
+    const tooltip = d3.select("body").append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "1px")
+      .style("border-radius", "5px")
+      .style("padding", "10px");
+
+    function showTooltip(event, d) {
+      tooltip.transition()
+        .duration(200)
+        .style("opacity", 1);
+      tooltip.html(`<strong>${d}</strong><br>Frequency: ${topicFrequency.get(d)}`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY + 10) + "px");
+    }
+
+    function updateTooltip(event, d) {
+      tooltip.style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY + 10) + "px");
+    }
+
+    function hideTooltip() {
+      tooltip.transition()
+        .duration(200)
+        .style("opacity", 0);
+    }
+  });
+}
+
+
+        </script>
+    </main>
+
+    
+
+  <footer style="position: fixed; bottom: 0; width: 100%;">
+    <p>Fasih Ur Rehman - 21i1705</p>
+    <p>Ibrahim Akhtar - 21i1679</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Word Cloud</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<body>
+  <div id="word-cloud"></div>
+
+  <script>
+    // Define container element
+    const container = d3.select("#word-cloud");
+
+    // Read data from CSV
+    d3.csv("sentence.csv").then(data => {
+      // Initialize an empty object to store words and frequencies
+      const wordFrequencyMap = {};
+
+      // Process each sentence
+      data.forEach(sentence => {
+        // Split sentence into words and convert to lowercase
+        const words = sentence.sentence.toLowerCase().split(/\W+/); // Replace 'text' with the actual property name
+
+        // Update frequency map for each word
+        words.forEach(word => {
+          if (!wordFrequencyMap.hasOwnProperty(word)) {
+            wordFrequencyMap[word] = 0;
+          }
+          wordFrequencyMap[word]++;
+        });
+      });
+
+      // Convert frequency map to an array of word objects
+      const wordList = Object.entries(wordFrequencyMap).map(([word, count]) => ({ text: word, size: count * 10 }));
+
+      // Define word cloud layout
+      const layout = d3.layout.cloud()
+        .size([container.node().clientWidth, container.node().clientHeight])
+        .words(wordList)
+        .padding(5)
+        .rotate(() => ~~(Math.random() * 2) * 90)
+        .font("Impact")
+        .fontSize(d => d.size)
+        .on("end", drawWordCloud);
+
+      // Start the layout process
+      layout.start();
+
+      function drawWordCloud(words) {
+        // Create SVG element within container
+        const svg = container.append("svg")
+          .attr("width", layout.size()[0])
+          .attr("height", layout.size()[1]);
+
+        // Create text elements for each word
+        const textElements = svg.selectAll("text")
+          .data(words)
+          .enter().append("text")
+          .style("font-size", d => `${d.size}px`)
+          .style("fill", () => d3.interpolateRainbow(Math.random()))
+          .attr("text-anchor", "middle")
+          .attr("transform", d => `translate(${d.x}, ${d.y})rotate(${d.rotate})`);
+
+        // Add text content for each word element
+        textElements.text(d => d.text);
+      }
+    });
+  </script>
+</body>

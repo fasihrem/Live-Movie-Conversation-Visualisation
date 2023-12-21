@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radar Chart for Overall Scores</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Load data
+  d3.csv("analysis.csv").then(function(data) {
+    // Group data by topic and calculate average sentiment and interest level
+    const topicSummary = d3.rollup(data, v => ({
+      sentiment: d3.mean(v, d => +d.sentiment),
+      interest: d3.mean(v, d => +d.interest_level)
+    }), d => d.topic);
+
+    // Extract unique topics and their summaries
+    const topics = Array.from(topicSummary.keys());
+    const summaries = Array.from(topicSummary.values());
+
+    // Radar chart configuration
+    const width = 400;
+    const height = 400;
+    const radius = Math.min(width, height) / 2;
+
+    const radarChart = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", `translate(${width / 2},${height / 2})`);
+
+    // Define the radar chart scales
+    const scale = d3.scaleLinear()
+      .domain([0, 10])
+      .range([0, radius]);
+
+    // Draw axes
+    const axes = radarChart.selectAll(".axis")
+      .data(['Sentiment', 'Interest Level'])
+      .enter().append("g")
+      .attr("class", "axis");
+
+    axes.append("line")
+      .attr("x1", (d, i) => scale(0) * Math.cos((i * Math.PI) / 2))
+      .attr("y1", (d, i) => scale(0) * Math.sin((i * Math.PI) / 2))
+      .attr("x2", (d, i) => scale(10) * Math.cos((i * Math.PI) / 2))
+      .attr("y2", (d, i) => scale(10) * Math.sin((i * Math.PI) / 2))
+      .attr("class", "line");
+
+    axes.append("text")
+      .attr("x", (d, i) => scale(11) * Math.cos((i * Math.PI) / 2))
+      .attr("y", (d, i) => scale(11) * Math.sin((i * Math.PI) / 2))
+      .attr("class", "legend")
+      .text(d => d);
+
+    // Draw radar chart
+    const line = d3.lineRadial()
+      .angle((d, i) => (i * Math.PI) / 2)
+      .radius(d => scale(d));
+
+    const radarPaths = radarChart.selectAll(".radar-path")
+      .data(summaries)
+      .enter().append("path")
+      .attr("class", "radar-path")
+      .attr("d", d => line([d.sentiment, d.interest, d.sentiment])); // Repeat the first point to close the path
+
+    // Add labels
+    radarChart.selectAll(".radar-label")
+      .data(topics)
+      .enter().append("text")
+      .attr("x", (d, i) => scale(12) * Math.cos((i * Math.PI) / 2))
+      .attr("y", (d, i) => scale(12) * Math.sin((i * Math.PI) / 2))
+      .attr("class", "radar-label")
+      .text(d => d);
+  });
+});
+</script>
+
+</body>
+</html>

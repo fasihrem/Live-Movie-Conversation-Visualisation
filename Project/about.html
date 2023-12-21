@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Provicali', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #007bff;
+            padding: 10px;
+            text-align: center;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: #f2f2f2;
+            padding: 10px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #007bff;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        .members-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .member {
+            width: 48%; /* Adjust the width based on your design */
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .cool-details {
+            color: #FF617D;
+            font-weight: bold;
+        }
+
+        .nerdy-details {
+            color: white;
+            font-style: italic;
+        }
+
+        .box-pink {
+            background-color: #61FFE3;
+        }
+
+        .box-green {
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Data Visualization Dashboard</h1>
+      </header>
+    <nav>
+        <a href="dashboard.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="project-report.html">Project Report</a>
+    </nav>
+
+    <main>
+        <h2>About Us</h2>
+
+
+        <label for="colorpicker">Color Picker:</label>
+        <input type="color" id="colorpicker" value="#0000ff">
+
+        <div class="members-container">
+            <div class="member box-pink" style="color: colorpicker">
+                <h3>Fasih Ur Rehman - Bear </h3>
+                <p class="cool-details">Fasih is not just a developer; he's a coding wizard with a passion for creating sleek and innovative solutions. Known for his cool demeanor and ability to turn complex problems into elegant code.</p>
+            </div>
+
+            <div class="member box-green">
+                <h3>Ibrahim Akhtar - Ibz</h3>
+                <p class="nerdy-details">Ibrahim is our resident tech guru. With a love for algorithms and a penchant for pocket protectors, he dives deep into the world of code, always seeking the most efficient solutions. His nerdy charm is unmatched!</p>
+            </div>
+        </div>
+
+    </main>
+    <footer style="position: fixed; bottom: 0; width: 100%;">
+        <p>Fasih Ur Rehman - 21i1705</p>
+        <p>Ibrahim Akhtar - 21i1679</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Sentiment Heatmap</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<body>
+  <script>
+
+  // Define dimensions
+  const width = 500;
+  const height = 300;
+  const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+
+  // Define color scale for sentiment
+  const colorScale = d3.scaleLinear()
+    .domain([0, 10])
+    .range(["red", "green"]);
+
+  // Load data
+  d3.csv("analysis.csv").then(function(data) {
+    
+    // Extract sentiment values and labels
+    const sentimentValues = data.map(d => parseFloat(d.sentiment));
+    const labels = data.map(d => d.sentence);
+
+    // Create SVG element
+    const svg = d3.select("body").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    // Create squares for each sentiment value
+    // Create squares for each sentiment value
+svg.selectAll("rect")
+  .data(sentimentValues)
+  .enter()
+  .append("rect")
+  .attr("x", function(d, i) { return i * (width / sentimentValues.length); })
+  .attr("y", 0)
+  .attr("width", width / sentimentValues.length)
+  .attr("height", height)
+  .attr("fill", function(d) { return colorScale(d); });
+
+
+    // Add axis labels
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height + margin.bottom - 5)
+      .text("Sentiment Value");
+
+    // Add labels below each square
+    svg.selectAll("text.label")
+      .data(labels)
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("x", function(d, i) { return (i * (width / sentimentValues.length)) + (width / sentimentValues.length / 2); })
+      .attr("y", height + margin.bottom + 15)
+      .text(function(d) { return d; });
+
+  });
+  </script>
+</body>
